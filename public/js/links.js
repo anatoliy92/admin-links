@@ -73,7 +73,7 @@ function uploadPhoto(lang, section_id, link_id) {
 						'<a href="#" class="deleteMedia" data-id="' + $data.file.id + '"><i class="fa fa-trash-o"></i></a>'+
 					'</div>'+
 					'<div class="card-body p-0">'+
-						'<img src="' + $data.storage + $data.file.url + '" style="width:100%">'+
+						'<img src="/image/resize/300/300/' + $data.file.url + '" style="width:100%">'+
 					'</div>'+
 				'</div>';
 				$("#link_photo-"+lang).empty();

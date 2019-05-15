@@ -104,7 +104,7 @@
 																<a href="#" class="deleteMedia" data-id="{{ $image->id }}"><i class="fa fa-trash-o"></i></a>
 															</div>
 															<div class="card-body p-0">
-																<img src="{{ env('STORAGE_URL') . $image->url }}" style="width:100%">
+																<img src="/image/resize/300/300/{{ $image->url }}" style="width:100%">
 															</div>
 														</div>
 													@endif

@@ -10,7 +10,7 @@ class Links extends Model
 {
 	use ModelTrait;
 
-	protected $tables = 'links';
+	protected $table = 'links';
 
 	protected $modelName = __CLASS__;
 
