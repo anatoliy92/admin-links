@@ -46,4 +46,9 @@ class Links extends Model
 		return ($this->{'link_' . $link}) ? $this->{'link_' . $link} : $this->link_ru ;
 	}
 
+	public function getBlankAttribute ()
+	{
+		return ((substr($this->link, 0, 7) == 'http://') || (substr($this->link, 0, 8) == 'https://')) ? 'target="_blank"' : 'target="_self"';
+	}
+
 }
