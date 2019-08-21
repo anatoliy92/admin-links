@@ -69,6 +69,11 @@ class LinksController extends AvlController
 			$links->{'title_' . $lang->key}       = $post['links_title_' . $lang->key] ?? null;
 			$links->{'link_' . $lang->key}        = $post['links_link_' . $lang->key] ?? null;
 			$links->{'description_' . $lang->key} = $post['links_description_' . $lang->key] ?? null;
+
+			// Очищаем файлы кеша
+			if (Cache::has('col-links-' . $lang->key . '-' . $section->alias)) {
+				Cache::forget('col-links-' . $lang->key . '-' . $section->alias);
+			}
 		}
 
 		$links->published_at = $post['links_published_at'] . ' ' . $post['links_published_time'];
@@ -130,8 +135,8 @@ class LinksController extends AvlController
 			$links->{'description_' . $lang->key} = $data['links_description_' . $lang->key] ?? null;
 
 			// Очищаем файлы кеша
-			if (Cache::has('col-links-' . $lang->key . '-' . $section->area_id . '-' . $section->alias)) {
-				Cache::forget('col-links-' . $lang->key . '-' . $section->area_id . '-' . $section->alias);
+			if (Cache::has('col-links-' . $lang->key . '-' . $section->alias)) {
+				Cache::forget('col-links-' . $lang->key . '-' . $section->alias);
 			}
 		}
 
