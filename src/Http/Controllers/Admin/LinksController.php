@@ -48,7 +48,8 @@ class LinksController extends AvlController
 
 	public function store(Request $request, $id)
 	{
-		$this->authorize('create', Sections::findOrFail($id));
+	    $section = Sections::findOrFail($id);
+		$this->authorize('create', $section);
 
 		$post = $request->input();
 
