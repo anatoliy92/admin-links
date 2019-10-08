@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Avl\AvlController;
-use App\Models\{Sections, Langs};
+use App\Models\{Sections, Langs, Rubrics};
 use Avl\AdminLinks\Models\Links;
 use App\Traits\MediaTrait;
 use Cache;
@@ -32,16 +32,21 @@ class LinksController extends AvlController
 			'langs' => $this->langs,
 			'links' => $links->paginate(20),
 			'section' => $section,
+            'rubrics' => array_add(toSelectTransform(Rubrics::select('id', 'title_ru')->where('section_id', $section->id)->get()->toArray()), 0, 'Ссылки без рубрики'),
 			'id' => $id
 		]);
 	}
 
 	public function create($id)
 	{
-		$this->authorize('create', Sections::findOrFail($id));
+	    $section = Sections::findOrFail($id);
+
+		$this->authorize('create', $section);
 
 		return view('adminlinks::links.create', [
 			'langs' => $this->langs,
+            'section' => $section,
+            'rubrics' => $section->rubrics()->orderBy('published_at', 'DESC')->get(),
 			'id' => $id
 		]);
 	}
@@ -81,6 +86,10 @@ class LinksController extends AvlController
 		$links->class = $post['links_class'];
 		$links->section_id = $id;
 
+        if (isset($post['links_rubric_id']) && ($post['links_rubric_id'] > 0)) {
+            $links->rubric_id = $post['links_rubric_id'];    // проставляему рубрику если ее выбрали
+        }
+
 		if ($links->save()) {
 			if ($post['button'] == 'save') {
 				return redirect()->route('adminlinks::sections.links.create', ['id' => $id])->with(['success' => ['Сохранение прошло успешно!']]);
@@ -105,6 +114,7 @@ class LinksController extends AvlController
 		return view('adminlinks::links.edit', [
 			'section' => $section,
 			'id' => $id,
+            'rubrics' => $section->rubrics()->orderBy('published_at', 'DESC')->get(),
 			'langs' => $this->langs,
 			'link' => $link,
 		]);
@@ -140,6 +150,11 @@ class LinksController extends AvlController
 				Cache::forget('col-links-' . $lang->key . '-' . $section->alias);
 			}
 		}
+        if (isset($data['links_rubric_id']) && ($data['links_rubric_id'] > 0)) {
+            $links->rubric_id = $data['links_rubric_id'];
+        } else {
+            $links->rubric_id = null;
+        }
 
 		$links->published_at = $data['links_published_at'] . ' ' . $data['links_published_time'];
 		$links->class = $data['links_class'];

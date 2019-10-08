@@ -38,6 +38,21 @@
 							{{ Form::text('links_class', null, ['class' => 'form-control']) }}
 						</div>
 					</div>
+					@if ($section->rubric == 1)
+						<div class="col-12">
+							<div class="form-group">
+								<label for="news_published_time">Рубрика</label>
+								<select class="form-control" name="links_rubric_id">
+									<option value="0">---</option>
+									@if (!is_null($rubrics))
+										@foreach ($rubrics as $rubric)
+											<option value="{{ $rubric->id }}" @if(old('links_rubric_id') == $rubric->id){{ 'selected' }}@endif>{{ !is_null($rubric->title_ru) ? $rubric->title_ru : str_limit(strip_tags($rubric->description_ru), 100) }}</option>
+										@endforeach
+									@endif
+								</select>
+							</div>
+						</div>
+					@endif
 				</div>
 
 				<ul class="nav nav-tabs" role="tablist">

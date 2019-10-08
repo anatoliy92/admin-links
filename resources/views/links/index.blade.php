@@ -23,6 +23,7 @@
 								<th class="text-center" style="width: 20px">{{ $lang->key }}</th>
 							@endforeach
 							<th class="text-center">Наименование ссылки</th>
+							@if ($section->rubric == 1)<th class="text-center" style="width: 160px;">Рубрика</th>@endif
 							<th class="text-center" style="width: 160px">Дата публикации</th>
 							<th class="text-center" style="width: 100px;">Действие</th>
 						</tr>
@@ -38,6 +39,9 @@
 									</td>
 								@endforeach
 								<td>{{ $link->title_ru }}<br/><span class="text-secondary">{{ $link->link_ru }}</span></td>
+								@if ($section->rubric == 1)
+									<td class="text-center">@if(!is_null($link->rubric))@if(!is_null($link->rubric->title_ru)){{ $link->rubric->title_ru }}@else{{ str_limit(strip_tags($link->rubric->description_ru), 70) }}@endif @endif</td>
+								@endif
 								<td>{{ $link->published_at }}</td>
 								<td class="text-right">
 									<div class="btn-group" role="group">

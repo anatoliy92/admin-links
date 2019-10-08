@@ -28,10 +28,15 @@ class Links extends Model
 		return Media::whereModel('Avl\AdminLinks\Models\Links')->where('model_id', $this->id)->where('type', $type);
 	}
 
+	public function rubric ()
+    {
+	    return $this->belongsTo(\App\Models\Rubrics::class, 'rubric_id', 'id');
+    }
+
 	public function getTitleAttribute ($value, $lang = null) {
 		$title = (!is_null($lang)) ? $lang : $this->lang;
 
-		return ($this->{'title_' . $title}) ? $this->{'title_' . $title} : $this->title_ru ;
+		return ($this->{'title_' . $title}) ? $this->{'title_' . $title} : null;
 	}
 
 	public function getDescriptionAttribute ($value, $lang = null) {
