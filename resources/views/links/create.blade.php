@@ -19,6 +19,9 @@
 		<div class="card-body">
 			<form action="{{ route('adminlinks::sections.links.index', ['id' => $id]) }}" method="post" id="submit">
 				{!! csrf_field(); !!}
+				@php $isAdmin = auth()->user()->isAdmin(); @endphp
+				@php $participant = participant(); @endphp
+
 				<div class="row">
 					<div class="col-4">
 						<div class="form-group">
@@ -32,12 +35,15 @@
 							{{ Form::text('links_published_time', date('H:i'), ['class' => 'form-control timepicker']) }}
 						</div>
 					</div>
-					<div class="col-4">
-						<div class="form-group">
-							{{ Form::label(null, 'Класс') }}
-							{{ Form::text('links_class', null, ['class' => 'form-control']) }}
+					@if ($isAdmin || $participant->isModerator())
+						<div class="col-4">
+							<div class="form-group">
+								{{ Form::label(null, 'Класс') }}
+								{{ Form::text('links_class', null, ['class' => 'form-control']) }}
+							</div>
 						</div>
-					</div>
+					@endif
+
 					@if ($section->rubric == 1)
 						<div class="col-12">
 							<div class="form-group">

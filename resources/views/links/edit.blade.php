@@ -19,6 +19,9 @@
 				<form action="{{ route('adminlinks::sections.links.update', ['id' => $id, 'links' => $link->id]) }}" method="post" id="submit">
 					{!! csrf_field(); !!}
 					{{ method_field('PUT') }}
+					@php $isAdmin = auth()->user()->isAdmin(); @endphp
+					@php $participant = participant(); @endphp
+
 					<div class="row">
 						<div class="col-4">
 							<div class="form-group">
@@ -32,12 +35,14 @@
 								{{ Form::text('links_published_time', date('H:i', strtotime($link->published_at)), ['class' => 'form-control timepicker']) }}
 							</div>
 						</div>
-						<div class="col-4">
-							<div class="form-group">
-								{{ Form::label(null, 'Класс') }}
-								{{ Form::text('links_class', $link->class, ['class' => 'form-control']) }}
+						@if ($isAdmin || $participant->isModerator())
+							<div class="col-4">
+								<div class="form-group">
+									{{ Form::label(null, 'Класс') }}
+									{{ Form::text('links_class', $link->class, ['class' => 'form-control']) }}
+								</div>
 							</div>
-						</div>
+						@endif
 
 						@if ($section->rubric == 1)
 							<div class="col-12">

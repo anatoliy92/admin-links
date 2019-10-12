@@ -1,12 +1,13 @@
 <?php namespace Avl\AdminLinks\Models;
 
+use Darmen\Moderation\Models\Moderatable;
 use App\Traits\ModelTrait;
 use LaravelLocalization;
 use App\Models\Media;
-
 use Illuminate\Database\Eloquent\Model;
 
-class Links extends Model
+
+class Links extends Model implements Moderatable
 {
 	use ModelTrait;
 
@@ -18,10 +19,12 @@ class Links extends Model
 
 	protected $lang = null;
 
-	public function __construct ()
-	{
-		$this->lang = LaravelLocalization::getCurrentLocale();
-	}
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->lang = LaravelLocalization::getCurrentLocale();
+    }
 
 	public function media ($type = 'image')
 	{
@@ -55,5 +58,36 @@ class Links extends Model
 	{
 		return ((substr($this->link, 0, 7) == 'http://') || (substr($this->link, 0, 8) == 'https://')) ? 'target="_blank"' : 'target="_self"';
 	}
+
+    public function getId()
+    {
+        return $this->getKey();
+    }
+
+    public function getEditUrl()
+    {
+        return '/sections/' . $this->section_id . '/links/' . $this->id;
+    }
+
+    public function getModerationModelName()
+    {
+        $section = $this->section;
+
+        return (($section) ? $section->name_ru . ' - ' : '') . $this->title_ru ?? 'Каталог ссылок';
+    }
+
+    public function publish()
+    {
+        $this->setAttribute('good_kz', true);
+        $this->setAttribute('good_ru', true);
+        $this->setAttribute('good_en', true);
+    }
+
+    public function unPublish()
+    {
+        $this->setAttribute('good_kz', false);
+        $this->setAttribute('good_ru', false);
+        $this->setAttribute('good_en', false);
+    }
 
 }

@@ -25,6 +25,9 @@
 							<th class="text-center">Наименование ссылки</th>
 							@if ($section->rubric == 1)<th class="text-center" style="width: 160px;">Рубрика</th>@endif
 							<th class="text-center" style="width: 160px">Дата публикации</th>
+							<th class="text-center align-middle" width="130">Оператор</th>
+							<th class="text-center align-middle" width="130">Руководитель</th>
+							<th class="text-center align-middle" width="130">Модератор</th>
 							<th class="text-center" style="width: 100px;">Действие</th>
 						</tr>
 					</thead>
@@ -43,10 +46,15 @@
 									<td class="text-center">@if(!is_null($link->rubric))@if(!is_null($link->rubric->title_ru)){{ $link->rubric->title_ru }}@else{{ str_limit(strip_tags($link->rubric->description_ru), 70) }}@endif @endif</td>
 								@endif
 								<td>{{ $link->published_at }}</td>
+								<td class="text-center">{{ $link->getAuthor() }}</td>
+								<td class="text-center">{{ $link->getSupervisor() }}</td>
+								<td class="text-center">{{ $link->getModerator() }}</td>
 								<td class="text-right">
 									<div class="btn-group" role="group">
 										@can('view', $section) <a href="{{ route('adminlinks::sections.links.show', ['id' => $id, 'link_id' => $link->id]) }}" class="btn btn btn-outline-primary" title="Просмотр"><i class="fa fa-eye"></i></a> @endcan
-										@can('update', $section) <a href="{{ route('adminlinks::sections.links.edit', ['id' => $id, 'link_id' => $link->id]) }}" class="btn btn btn-outline-success" title="Изменить"><i class="fa fa-edit"></i></a> @endcan
+										@if ($link->hasPermissionModel())
+											@can('update', $section) <a href="{{ route('adminlinks::sections.links.edit', ['id' => $id, 'link_id' => $link->id]) }}" class="btn btn btn-outline-success" title="Изменить"><i class="fa fa-edit"></i></a> @endcan
+										@endif
 										@can('delete', $section) <a href="#" class="btn btn btn-outline-danger remove--record" title="Удалить"><i class="fa fa-trash"></i></a> @endcan
 									</div>
 									@can('delete', $section)

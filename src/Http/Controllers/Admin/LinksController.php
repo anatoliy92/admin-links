@@ -1,9 +1,10 @@
 <?php namespace Avl\AdminLinks\Controllers\Admin;
 
-use Illuminate\Http\Request;
+use Darmen\Moderation\Services\ModerationService;
 use App\Http\Controllers\Avl\AvlController;
 use App\Models\{Sections, Langs, Rubrics};
 use Avl\AdminLinks\Models\Links;
+use Illuminate\Http\Request;
 use App\Traits\MediaTrait;
 use Cache;
 
@@ -14,47 +15,53 @@ class LinksController extends AvlController
 
 	protected $langs = null;
 
-	public function __construct (Request $request) {
+	protected $section;
+
+    /** @var ModerationService  */
+    private $moderationService;
+
+	public function __construct (Request $request, ModerationService $moderationService) {
 		parent::__construct($request);
 
 		$this->langs = Langs::get();
+
+        $this->section = Sections::find($request->id) ?? null;
+
+        $this->moderationService = $moderationService;
+
+        view()->share([ 'section' => $this->section ]);
 	}
 
-	public function index($id)
+	public function index()
 	{
-		$section = Sections::whereId($id)->firstOrFail();
+		$this->authorize('view', $this->section);
 
-		$this->authorize('view', $section);
-
-		$links = $section->links()->orderBy('published_at', 'DESC');
+		$links = $this->section->links()->orderBy('published_at', 'DESC');
 
 		return view('adminlinks::links.index', [
 			'langs' => $this->langs,
 			'links' => $links->paginate(20),
-			'section' => $section,
-            'rubrics' => array_add(toSelectTransform(Rubrics::select('id', 'title_ru')->where('section_id', $section->id)->get()->toArray()), 0, 'Ссылки без рубрики'),
-			'id' => $id
+			'section' => $this->section,
+            'rubrics' => array_add(toSelectTransform(Rubrics::select('id', 'title_ru')->where('section_id', $this->section->id)->get()->toArray()), 0, 'Ссылки без рубрики'),
+			'id' => $this->section->id
 		]);
 	}
 
-	public function create($id)
+	public function create()
 	{
-	    $section = Sections::findOrFail($id);
-
-		$this->authorize('create', $section);
+		$this->authorize('create', $this->section);
 
 		return view('adminlinks::links.create', [
 			'langs' => $this->langs,
-            'section' => $section,
-            'rubrics' => $section->rubrics()->orderBy('published_at', 'DESC')->get(),
-			'id' => $id
+            'section' => $this->section,
+            'rubrics' => $this->section->rubrics()->orderBy('published_at', 'DESC')->get(),
+			'id' => $this->section->id
 		]);
 	}
 
-	public function store(Request $request, $id)
+	public function store(Request $request)
 	{
-	    $section = Sections::findOrFail($id);
-		$this->authorize('create', $section);
+		$this->authorize('create', $this->section);
 
 		$post = $request->input();
 
@@ -77,54 +84,73 @@ class LinksController extends AvlController
 			$links->{'description_' . $lang->key} = $post['links_description_' . $lang->key] ?? null;
 
 			// Очищаем файлы кеша
-			if (Cache::has('col-links-' . $lang->key . '-' . $section->alias)) {
-				Cache::forget('col-links-' . $lang->key . '-' . $section->alias);
+			if (Cache::has('col-links-' . $lang->key . '-' . $this->section->alias)) {
+				Cache::forget('col-links-' . $lang->key . '-' . $this->section->alias);
 			}
 		}
 
 		$links->published_at = $post['links_published_at'] . ' ' . $post['links_published_time'];
-		$links->class = $post['links_class'];
-		$links->section_id = $id;
+		$links->section_id = $this->section->id;
+        if (isset($post['links_class'])) {
+            $links->class = $post['links_class'];
+        }
 
         if (isset($post['links_rubric_id']) && ($post['links_rubric_id'] > 0)) {
             $links->rubric_id = $post['links_rubric_id'];    // проставляему рубрику если ее выбрали
         }
 
 		if ($links->save()) {
-			if ($post['button'] == 'save') {
-				return redirect()->route('adminlinks::sections.links.create', ['id' => $id])->with(['success' => ['Сохранение прошло успешно!']]);
-			}
-			if ($post['button'] == 'edit') {
-				return redirect()->route('adminlinks::sections.links.edit', ['id' => $id, 'link' => $links->id])->with(['success' => ['Сохранение прошло успешно!']]);
-			}
-			return redirect()->route('adminlinks::sections.links.index', ['id' => $id])->with(['success' => ['Сохранение прошло успешно!']]);
+
+            $participant = participant();
+            $moderationMessage = ' Отправлено на модерацию';
+
+            if ($participant->isAutomaticPublishEnabled()) {
+                $moderationMessage = ' Согласовано и опубликовано автоматически';
+                $links->publish();
+                $links->save();
+            } else {
+                $review = $this->moderationService->sendToReview(participant(), $links, true, [], $links->getAttributes());
+
+                if ($participant->isAutomaticApprovalEnabled()) {
+                    $moderationMessage = ' Согласовано автоматически';
+                    $this->moderationService->approve($review, now(), $moderationMessage, true);
+                    $newReview = $this->moderationService->sendToReview($review->getAuthor(), $links, true, [], $links->getAttributes());
+                }
+            }
+            switch ($post['button']) {
+                case 'save': { return redirect()->route('adminlinks::sections.links.create', ['id' => $this->section->id])->with(['success' => ['Сохранение прошло успешно!' . $moderationMessage]]); }
+                case 'edit': { return redirect()->route('adminlinks::sections.links.edit', ['id' => $this->section->id, 'link' => $links->id])->with(['success' => ['Сохранение прошло успешно!'.$moderationMessage]]); }
+                default: { return redirect()->route('adminlinks::sections.links.index', ['id' => $this->section->id])->with(['success' => ['Сохранение прошло успешно!'.$moderationMessage]]); }
+            }
 		}
 
-		return redirect()->route('adminlinks::sections.links.create', ['id' => $id])->with(['errors' => ['Что-то пошло не так.']]);
+		return redirect()->route('adminlinks::sections.links.create', ['id' => $this->section->id])->with(['errors' => ['Что-то пошло не так.']]);
 	}
 
-	public function edit($id, $link_id)
+	public function edit(Request $request)
 	{
-		$section = Sections::whereId($id)->firstOrFail();
+		$this->authorize('update', $this->section);
 
-		$this->authorize('update', $section);
+		$link = $this->section->links()->findOrFail($request->link);
 
-		$link = $section->links()->findOrFail($link_id);
+        if ($this->moderationService->isModelUnderReview($link)) {
+            return redirect()->back()->withErrors([
+                sprintf("Действие невозможно, так как %s в процессе модерации", $link->getModerationModelName())
+            ]);
+        }
 
 		return view('adminlinks::links.edit', [
-			'section' => $section,
-			'id' => $id,
-            'rubrics' => $section->rubrics()->orderBy('published_at', 'DESC')->get(),
+			'section' => $this->section,
+			'id' => $this->section->id,
+            'rubrics' => $this->section->rubrics()->orderBy('published_at', 'DESC')->get(),
 			'langs' => $this->langs,
 			'link' => $link,
 		]);
 	}
 
-	public function update(Request $request, $id, $link_id)
+	public function update(Request $request)
 	{
-		$section = Sections::whereId($id)->firstOrFail();
-
-		$this->authorize('update', $section);
+		$this->authorize('update', $this->section);
 
 		$data = $request->input();
 		$this->validate(request(), [
@@ -137,7 +163,7 @@ class LinksController extends AvlController
 			'links_description_ru' => ''
 		]);
 
-		$links = $section->links()->findOrFail($link_id);
+		$links = $this->section->links()->findOrFail($request->link);
 
 		foreach ($this->langs as $lang) {
 			$links->{'good_' . $lang->key}        = $data['links_good_' . $lang->key] ?? false;
@@ -146,8 +172,8 @@ class LinksController extends AvlController
 			$links->{'description_' . $lang->key} = $data['links_description_' . $lang->key] ?? null;
 
 			// Очищаем файлы кеша
-			if (Cache::has('col-links-' . $lang->key . '-' . $section->alias)) {
-				Cache::forget('col-links-' . $lang->key . '-' . $section->alias);
+			if (Cache::has('col-links-' . $lang->key . '-' . $this->section->alias)) {
+				Cache::forget('col-links-' . $lang->key . '-' . $this->section->alias);
 			}
 		}
         if (isset($data['links_rubric_id']) && ($data['links_rubric_id'] > 0)) {
@@ -157,38 +183,58 @@ class LinksController extends AvlController
         }
 
 		$links->published_at = $data['links_published_at'] . ' ' . $data['links_published_time'];
-		$links->class = $data['links_class'];
+		if (isset($data['links_class'])) {
+            $links->class = $data['links_class'];
+        }
 
-		if ($links->save()) {
-			return redirect()->route('adminlinks::sections.links.index', ['id' => $id])->with(['success' => ['Сохранение прошло успешно!']]);
-		}
-		return redirect()->back()->with(['errors' => ['Что-то пошло не так.']]);
+        /* Moderation */
+            $participant = participant();
+            if ($participant->isAutomaticPublishEnabled()) {
+                $links->publish();
+                $links->save();
+                return redirect()->route('adminlinks::sections.links.index', ['id' => $this->section->id])->with(['success' => ['Объект был опубликован автоматически.']]);
+            }
+
+            $originalAttributes = $links->getOriginal();
+            $review = $this->moderationService->sendToReview(participant(), $links, true, $originalAttributes, $links->getDirty());
+
+            if ($participant->isAutomaticApprovalEnabled()) {
+                $this->moderationService->approve($review, now(), 'Согласовано автоматически', true);
+                $newReview = $this->moderationService->sendToReview($review->getAuthor(), $links, true, $originalAttributes, $links->getDirty());
+
+                return redirect()->route('adminlinks::sections.links.index', ['id' => $this->section->id ])->with(['success' => ['Объект был согласован автоматически.']]);
+            }
+        /* Moderation */
+
+        return redirect()->route('adminlinks::sections.links.index', ['id' => $this->section->id])->with(['success' => ['Объект направлен на модерацию.']]);
 	}
 
-	public function show($id, $link_id)
+	public function show(Request $request)
 	{
-		$section = Sections::whereId($id)->firstOrFail();
+		$this->authorize('view', $this->section);
 
-		$this->authorize('view', $section);
-
-		$link = $section->links()->findOrFail($link_id);
+		$link = $this->section->links()->findOrFail($request->link);
 
 		return view('adminlinks::links.show', [
-			'section' => $section,
-			'id' => $id,
+			'section' => $this->section,
+			'id' => $this->section->id,
 			'langs' => $this->langs,
 			'link' => $link,
 		]);
 	}
 
-	public function destroy ($id, $link_id, Request $request)
+	public function destroy (Request $request)
 	{
-		$section = Sections::whereId($id)->firstOrFail();
+		$this->authorize('delete', $this->section);
 
-		$this->authorize('delete', $section);
+		$link = $this->section->links()->findOrFail($request->link);
 
-		$link = $section->links()->findOrFail($link_id);
 		if ($link) {
+            if ($this->moderationService->isModelUnderReview($link)) {
+                return [
+                    'errors' => sprintf("Действие невозможно, так как %s в процессе модерации", $link->getModerationModelName())
+                ];
+            }
 
 			// Получаем все картинки к записи и удаляем сначала их
 			$images = $link->media('image')->get();
