@@ -36,6 +36,13 @@ class Links extends Model implements Moderatable
 		return Media::whereModel('Avl\AdminLinks\Models\Links')->where('model_id', $this->id)->where('type', $type);
 	}
 
+	public function image ()
+	{
+		return $this->media('image')->where(function ($query) {
+		    $query->whereLang($this->lang);
+        })->first();
+	}
+
 	public function rubric ()
     {
 	    return $this->belongsTo(\App\Models\Rubrics::class, 'rubric_id', 'id');
@@ -50,13 +57,13 @@ class Links extends Model implements Moderatable
 	public function getDescriptionAttribute ($value, $lang = null) {
 		$description = (!is_null($lang)) ? $lang : $this->lang;
 
-		return ($this->{'description_' . $description}) ? $this->{'description_' . $description} : $this->description_ru ;
+		return ($this->{'description_' . $description}) ? $this->{'description_' . $description} : null ;
 	}
 
 	public function getLinkAttribute ($value, $lang = null) {
 		$link = (!is_null($lang)) ? $lang : $this->lang;
 
-		return ($this->{'link_' . $link}) ? $this->{'link_' . $link} : $this->link_ru ;
+		return ($this->{'link_' . $link}) ? $this->{'link_' . $link} : null ;
 	}
 
 	public function getBlankAttribute ()
