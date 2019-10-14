@@ -13,14 +13,12 @@
 			<div class="card-actions">
 				<a href="{{ route('adminlinks::sections.links.index', ['id' => $id]) }}" class="btn btn-default pl-3 pr-3" style="width: 70px;" title="Назад"><i class="fa fa-arrow-left"></i></a>
 				<button type="submit" form="submit" name="button" value="add" class="btn btn-success pl-3 pr-3" style="width: 70px;" title="Сохранить"><i class="fa fa-floppy-o"></i></button>
-				<button type="submit" form="submit" name="button" value="edit" class="btn btn-warning pl-3 pr-3" style="width: 70px;" title="Сохранить и изменить"><i class="fa fa-floppy-o"></i></button>
+				{{--<button type="submit" form="submit" name="button" value="edit" class="btn btn-warning pl-3 pr-3" style="width: 70px;" title="Сохранить и изменить"><i class="fa fa-floppy-o"></i></button>--}}
 			</div>
 		</div>
 		<div class="card-body">
 			<form action="{{ route('adminlinks::sections.links.index', ['id' => $id]) }}" method="post" id="submit">
 				{!! csrf_field(); !!}
-				@php $isAdmin = auth()->user()->isAdmin(); @endphp
-				@php $participant = participant(); @endphp
 
 				<div class="row">
 					<div class="col-4">
@@ -35,7 +33,7 @@
 							{{ Form::text('links_published_time', date('H:i'), ['class' => 'form-control timepicker']) }}
 						</div>
 					</div>
-					@if ($isAdmin || $participant->isModerator())
+					@if (auth()->user()->isAdmin() || participant()->isModerator())
 						<div class="col-4">
 							<div class="form-group">
 								{{ Form::label(null, 'Класс') }}
@@ -75,17 +73,7 @@
 						<div class="tab-pane @if($lang->key == "ru") active show @endif"  id="title_{{$lang->key}}" role="tabpanel">
 
 							<div class="row">
-								<div class="col-1">
-									<div class="form-group">
-										{{ Form::label('links_good_' . $lang->key, 'Вкл') }} <br/>
-										<label class="switch switch-3d switch-primary">
-											{{ Form::checkbox('links_good_' . $lang->key, true, false, ['class' => 'switch-input']) }}
-											<span class="switch-label"></span>
-											<span class="switch-handle"></span>
-										</label>
-									</div>
-								</div>
-								<div class="col-6">
+								<div class="col-7">
 									<div class="form-group">
 										{{ Form::label(null, 'Наименование') }}
 										{{ Form::text('links_title_' . $lang->key, null, ['class' => 'form-control']) }}

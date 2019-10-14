@@ -26,6 +26,11 @@ class Links extends Model implements Moderatable
         $this->lang = LaravelLocalization::getCurrentLocale();
     }
 
+    public function section()
+    {
+        return $this->belongsTo('App\Models\Sections', 'section_id', 'id');
+    }
+
 	public function media ($type = 'image')
 	{
 		return Media::whereModel('Avl\AdminLinks\Models\Links')->where('model_id', $this->id)->where('type', $type);

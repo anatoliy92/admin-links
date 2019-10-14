@@ -21,7 +21,7 @@ class LinksController extends SectionsController
 
         return view($template, [
             'records' => $records,
-            'pagination' => $records->appends($_GET)->links()
+            'pagination' => $records->appends($_GET)->links('vendor.pagination.default')
         ]);
 	}
 }

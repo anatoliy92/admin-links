@@ -10,12 +10,15 @@
 			<i class="fa fa-align-justify"></i> {{ $section->name_ru }}
 			@can('create', $section)
 				<div class="card-actions">
-					<a href="{{ route('adminlinks::sections.links.create', ['id' => $id]) }}" class="w-100 pl-3 pr-3"><i class="icon-plus" style="vertical-align: sub;"></i> Добавить</a>
+					<a href="{{ route('adminlinks::sections.links.create', ['id' => $id]) }}" class="w-100 pl-4 pr-4 bg-primary text-white" title="Добавить"><i class="fa fa-plus"></i></a>
 				</div>
 			@endcan
 		</div>
 		<div class="card-body">
 			@if ($links)
+				@php $isAdmin = auth()->user()->isAdmin(); @endphp
+				@php $participant = participant(); @endphp
+
 				<table class="table table-bordered">
 					<thead>
 						<tr>
@@ -36,9 +39,13 @@
 							<tr class="position-relative" id="links--item-{{ $link->id }}">
 								@foreach($langs as $lang)
 									<td class="text-center">
-										<a class="change--status" href="#" data-id="{{ $link->id }}" data-model="Avl\AdminLinks\Models\Links" data-lang="{{$lang->key}}">
-											<i class="fa @if ($link->{'good_' . $lang->key}){{ 'fa-eye' }}@else{{ 'fa-eye-slash' }}@endif"></i>
-										</a>
+										@if ($isAdmin || $participant->isModerator())
+											<a class="change--status" href="#" data-id="{{ $link->id }}" data-model="Avl\AdminLinks\Models\Links" data-lang="{{$lang->key}}">
+												<i class="fa @if ($link->{'good_' . $lang->key}){{ 'fa-eye' }}@else{{ 'fa-eye-slash' }}@endif"></i>
+											</a>
+										@else
+											<i class="fa @if ($link->good){{ 'fa-eye' }}@else{{ 'fa-eye-slash' }}@endif"></i>
+										@endif
 									</td>
 								@endforeach
 								<td>{{ $link->title_ru }}<br/><span class="text-secondary">{{ $link->link_ru }}</span></td>

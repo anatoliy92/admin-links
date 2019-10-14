@@ -78,7 +78,6 @@ class LinksController extends AvlController
 		$links = new Links;
 
 		foreach ($this->langs as $lang) {
-			$links->{'good_' . $lang->key}        = $post['links_good_' . $lang->key] ?? false;
 			$links->{'title_' . $lang->key}       = $post['links_title_' . $lang->key] ?? null;
 			$links->{'link_' . $lang->key}        = $post['links_link_' . $lang->key] ?? null;
 			$links->{'description_' . $lang->key} = $post['links_description_' . $lang->key] ?? null;
@@ -166,7 +165,6 @@ class LinksController extends AvlController
 		$links = $this->section->links()->findOrFail($request->link);
 
 		foreach ($this->langs as $lang) {
-			$links->{'good_' . $lang->key}        = $data['links_good_' . $lang->key] ?? false;
 			$links->{'title_' . $lang->key}       = $data['links_title_' . $lang->key] ?? null;
 			$links->{'link_' . $lang->key}        = $data['links_link_' . $lang->key] ?? null;
 			$links->{'description_' . $lang->key} = $data['links_description_' . $lang->key] ?? null;
