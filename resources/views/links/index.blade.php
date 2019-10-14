@@ -44,7 +44,7 @@
 												<i class="fa @if ($link->{'good_' . $lang->key}){{ 'fa-eye' }}@else{{ 'fa-eye-slash' }}@endif"></i>
 											</a>
 										@else
-											<i class="fa @if ($link->good){{ 'fa-eye' }}@else{{ 'fa-eye-slash' }}@endif"></i>
+											<i class="fa @if ($link->{'good_' . $lang->key}){{ 'fa-eye' }}@else{{ 'fa-eye-slash' }}@endif"></i>
 										@endif
 									</td>
 								@endforeach
